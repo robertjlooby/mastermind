@@ -22,4 +22,20 @@ module GameLogic
 
         [red, white]
     end
+
+    def self.game(actual, turns, reader, writer)
+        turns.times do
+            result = self.turn(actual, reader, writer)
+            return :win if result == [4, 0]
+        end
+        :lose
+    end
+
+    def self.turn(actual, reader, writer)
+        writer.ask_for_guess
+        guess = reader.read_guess
+        result = self.guess(guess, actual)
+        writer.write_response result
+        result
+    end
 end

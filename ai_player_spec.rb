@@ -1,13 +1,10 @@
 require 'rspec'
 require 'stringio'
 require_relative 'ai_player'
-require_relative 'game_logic'
 
 describe AIPlayer do
     before do
-        @o_stream = StringIO.new
-        @i_stream = StringIO.new
-        @ai = AIPlayer.new(@o_stream, @i_stream)
+        @ai = AIPlayer.new
     end
 
     it "exists" do
@@ -28,32 +25,35 @@ describe AIPlayer do
 
     it "stores the guess/response after making a guess" do
         expected = {"WWWW" => [2, 0]}
-        @i_stream.puts "[2, 0]"
-        @i_stream.rewind
 
-        @ai.guess
+        @ai.write_guess.should == "WWWW"
+        @ai.read_response [2, 0]
         @ai.past_guesses.should == expected
-
-        @o_stream.rewind
-        @o_stream.gets.chomp.should == "WWWW"
     end
 
     it "eliminates possible values if no pins are returned" do
         expected = Array.new(4){"RGBYO"} 
-        @i_stream.puts "[0, 0]"
-        @i_stream.rewind
 
-        @ai.guess
+        @ai.write_guess.should == "WWWW"
+        @ai.read_response [0, 0]
         @ai.possible_values.should == expected
     end
 
     it "eliminates possible values if no red pins are returned" do
         expected = ["RGBYO", "RGBYO", "GBWYO", "GBWYO"] 
         @ai.next_guess = "WWRR"
-        @i_stream.puts "[0, 2]"
-        @i_stream.rewind
 
-        @ai.guess
+        @ai.write_guess.should == "WWRR"
+        @ai.read_response [0, 2]
         @ai.possible_values.should == expected
+    end
+
+    after(:each) do
+        # doesn't repeat guesses
+        @ai.past_guesses.keys.include?(@ai.next_guess).should == false
+        # only guesses values that are in the list of possible values
+        @ai.next_guess.split("").each_with_index do |guess_char, index|
+            @ai.possible_values[index].include?(guess_char).should == true
+        end
     end
 end

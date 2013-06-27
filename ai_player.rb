@@ -1,22 +1,22 @@
 class AIPlayer
     attr_reader :past_guesses, :possible_values
     attr_accessor :next_guess
-    def initialize(o_stream, i_stream)
+    def initialize
         @past_guesses = {}
         @next_guess = "WWWW"
         @possible_values = Array.new(4){"RGBWYO"}
-        @o_stream = o_stream
-        @i_stream = i_stream
     end
 
 
-    def guess
-        @o_stream.puts @next_guess
-        response = @i_stream.gets.chomp
-        result = [response[1].to_i, response[4].to_i]
-        @past_guesses[@next_guess] = result
+    def write_guess
+        @next_guess
+    end
+    
+    def read_response(response)
+        @past_guesses[@next_guess] = response
         
-        update_possible_values(@next_guess, result)
+        update_possible_values(@next_guess, response)
+        determine_next_guess
     end
 
     def update_possible_values(guess, result)
@@ -29,5 +29,13 @@ class AIPlayer
                 end
             end
         end
+    end
+
+    def determine_next_guess
+        next_guess = ""
+        @possible_values.each do |possible_value_string|
+            next_guess += possible_value_string.split("").sample
+        end
+        @next_guess = next_guess
     end
 end

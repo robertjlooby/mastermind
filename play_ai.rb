@@ -10,4 +10,5 @@ else
 end
 
 ai = AIPlayer.new
-GameLogic.game(code, 10, AIGameIO::Reader.new(ai), AIGameIO::Writer.new(ai))
+outcome = GameLogic.game(code, 10, AIGameIO::Reader.new(ai), AIGameIO::Writer.new(ai))
+puts "AI #{outcome}!"

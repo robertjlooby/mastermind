@@ -27,7 +27,7 @@ describe AIPlayer do
 
     it "stores the guess/response after making a guess" do
         expected = {"WWWW" => [2, 0]}
-        @i_stream.puts "[2, 0]"
+        @i_stream.puts [2, 0].to_s
         @i_stream.rewind
 
         @ai.guess
@@ -166,6 +166,98 @@ describe AIPlayer do
         @o_stream.gets.chomp.should == "WRRG"
         @ai.possible_values.should == expected
         @ai.next_guess.should == "WBRB"
+    end
+
+    it "eliminates possible values if 2 red pins, 2 figured out values, and 2 white pins" do
+        @ai.possible_values = %w(W RGB R RGB)
+        @ai.next_guess = "WRRG"
+        expected = %w(W G R R)
+        @i_stream.puts [2, 2].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values.should == expected
+        @ai.next_guess.should == "WGRR"
+    end
+
+    it "eliminates possible values if 2 red pins, 2 figured out values, and 2 white pins" do
+        @ai.possible_values = %w(WRG B R RGB)
+        @ai.next_guess = "RBRG"
+        expected = %w(G B R R)
+        @i_stream.puts [2, 2].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values.should == expected
+        @ai.next_guess.should == "GBRR"
+    end
+
+    it "eliminates possible values if 3 red pins, 3 figured out values, and 0 white pins" do
+        @ai.possible_values = %w(W B R GB)
+        @ai.next_guess = "WBRG"
+        expected = %w(W B R B)
+        @i_stream.puts [3, 0].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values.should == expected
+        @ai.next_guess.should == "WBRB"
+    end
+
+    it "eliminates possible values if 3 red pins, 3 figured out values, and 0 white pins" do
+        @ai.possible_values = %w(W B R GB)
+        @ai.next_guess = "WBRG"
+        expected = %w(W B R B)
+        @i_stream.puts [3, 0].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values.should == expected
+        @ai.next_guess.should == "WBRB"
+    end
+
+    it "stores is_to_is_not_decisions when 2 red pins, 2 white pins, no figured out values" do
+        @ai.next_guess = "WBRG"
+        @i_stream.puts [2, 2].to_s
+        @i_stream.rewind
+        expected_decisions = Hash.new
+        expected_decisions[ [[0, "W"], [1, "B"]] ] = [[2, "R"], [3, "G"]]
+        expected_decisions[ [[0, "W"], [2, "R"]] ] = [[1, "B"], [3, "G"]]
+        expected_decisions[ [[0, "W"], [3, "G"]] ] = [[1, "B"], [2, "R"]]
+        expected_decisions[ [[1, "B"], [2, "R"]] ] = [[0, "W"], [3, "G"]]
+        expected_decisions[ [[1, "B"], [3, "G"]] ] = [[0, "W"], [2, "R"]]
+        expected_decisions[ [[2, "R"], [3, "G"]] ] = [[0, "W"], [1, "B"]]
+
+        @ai.guess
+        expected_decisions.each do |conditions, actions|
+            @ai.is_to_is_not_decisions[conditions].should == actions
+        end
+    end
+
+    it "can evaluate is_to_is_not_decisions" do
+        @ai.next_guess = "WBRG"
+        @i_stream.puts [2, 2].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values[0] = "W"
+        @ai.possible_values[1] = "B"
+        @ai.evaluate_is_to_is_not_decisions
+
+        @ai.possible_values.should == %w(W B GBWYO RBWYO)
+    end
+
+    it "can evaluate is_to_is_not_decisions" do
+        @ai.next_guess = "BWRG"
+        @i_stream.puts [2, 2].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values[0] = "B"
+        @ai.possible_values[1] = "W"
+        @ai.evaluate_is_to_is_not_decisions
+
+        @ai.possible_values.should == %w(B W GBWYO RBWYO)
     end
 
     after(:each) do

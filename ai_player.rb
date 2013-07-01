@@ -1,10 +1,12 @@
 class AIPlayer
     attr_reader :past_guesses
     attr_accessor :next_guess, :possible_values
-    def initialize
+    def initialize(i_stream, o_stream)
         @past_guesses = {}
         @next_guess = "WWWW"
         @possible_values = Array.new(4){"RGBWYO"}
+        @i_stream = i_stream
+        @o_stream = o_stream
     end
 
     def figured_out_positions
@@ -23,12 +25,11 @@ class AIPlayer
         figured_out_positions.length
     end
 
-    def write_guess
-        @next_guess
-    end
-    
-    def read_response(response)
-        @past_guesses[@next_guess] = response
+    def guess
+        @o_stream.puts next_guess
+        response = @i_stream.gets.chomp.upcase
+        match = /\[(?<red>\d+), (?<white>\d+)\]/.match(response)
+        @past_guesses[@next_guess] = [match[:red].to_i, match[:white].to_i]
         
         update_possible_values(@next_guess, response)
         determine_next_guess

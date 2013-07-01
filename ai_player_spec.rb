@@ -4,7 +4,9 @@ require_relative 'ai_player'
 
 describe AIPlayer do
     before do
-        @ai = AIPlayer.new
+        @o_stream = StringIO.new
+        @i_stream = StringIO.new
+        @ai = AIPlayer.new @i_stream, @o_stream
     end
 
     it "exists" do
@@ -25,10 +27,14 @@ describe AIPlayer do
 
     it "stores the guess/response after making a guess" do
         expected = {"WWWW" => [2, 0]}
+        @i_stream.puts "[2, 0]"
+        @i_stream.rewind
 
-        @ai.write_guess.should == "WWWW"
-        @ai.read_response [2, 0]
+        @ai.guess
         @ai.past_guesses.should == expected
+
+        @o_stream.rewind
+        @o_stream.gets.chomp.should == "WWWW"
     end
     
     it "has figured out no positions initially" do
@@ -110,39 +116,54 @@ describe AIPlayer do
 
     it "eliminates possible values if no pins are returned" do
         expected = Array.new(4){"RGBYO"} 
+        @i_stream.puts [0, 0].to_s
+        @i_stream.rewind
 
-        @ai.write_guess.should == "WWWW"
-        @ai.read_response [0, 0]
+        @ai.guess
+        
+        @o_stream.rewind
+        @o_stream.gets.chomp.should == "WWWW"
         @ai.possible_values.should == expected
     end
 
     it "eliminates possible values if no red pins are returned" do
-        expected = ["RGBYO", "RGBYO", "GBWYO", "GBWYO"] 
+        expected = %w(RGBYO RGBYO GBWYO GBWYO)
         @ai.next_guess = "WWRR"
+        @i_stream.puts [0, 2].to_s
+        @i_stream.rewind
 
-        @ai.write_guess.should == "WWRR"
-        @ai.read_response [0, 2]
+        @ai.guess
+        
+        @o_stream.rewind
+        @o_stream.gets.chomp.should == "WWRR"
         @ai.possible_values.should == expected
     end
 
     it "eliminates possible values if 1 red pin returned and 1 figured out value, and no white pins" do
-        @ai.possible_values = ["W", "RGB", "RGB", "RGB"]
+        @ai.possible_values = %w(W RGB RGB RGB)
         @ai.next_guess = "WRGG"
         expected = %w(W B B B)
+        @i_stream.puts [1, 0].to_s
+        @i_stream.rewind
 
-        @ai.write_guess.should == "WRGG"
-        @ai.read_response [1, 0]
+        @ai.guess
+        
+        @o_stream.rewind
+        @o_stream.gets.chomp.should == "WRGG"
         @ai.possible_values.should == expected
         @ai.next_guess.should == "WBBB"
     end
 
     it "eliminates possible values if 2 red pins returned and 2 figured out value, and no white pins" do
-        @ai.possible_values = ["W", "RGB", "R", "RGB"]
+        @ai.possible_values = %w(W RGB R RGB)
         @ai.next_guess = "WRRG"
         expected = %w(W B R B)
+        @i_stream.puts [2, 0].to_s
+        @i_stream.rewind
 
-        @ai.write_guess.should == "WRRG"
-        @ai.read_response [2, 0]
+        @ai.guess
+        @o_stream.rewind
+        @o_stream.gets.chomp.should == "WRRG"
         @ai.possible_values.should == expected
         @ai.next_guess.should == "WBRB"
     end

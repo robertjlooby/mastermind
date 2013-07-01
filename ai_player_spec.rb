@@ -234,6 +234,22 @@ describe AIPlayer do
         end
     end
 
+    it "stores is_to_is_not_decisions when 1 red pin, 3 white pins, no figured out values" do
+        @ai.next_guess = "WBRG"
+        @i_stream.puts [1, 3].to_s
+        @i_stream.rewind
+        expected_decisions = Hash.new
+        expected_decisions[ [[0, "W"]] ] = [[1, "B"], [2, "R"], [3, "G"]]
+        expected_decisions[ [[1, "B"]] ] = [[0, "W"], [2, "R"], [3, "G"]]
+        expected_decisions[ [[2, "R"]] ] = [[0, "W"], [1, "B"], [3, "G"]]
+        expected_decisions[ [[3, "G"]] ] = [[0, "W"], [1, "B"], [2, "R"]]
+
+        @ai.guess
+        expected_decisions.each do |conditions, actions|
+            @ai.is_to_is_not_decisions[conditions].should == actions
+        end
+    end
+
     it "can evaluate is_to_is_not_decisions" do
         @ai.next_guess = "WBRG"
         @i_stream.puts [2, 2].to_s
@@ -258,6 +274,21 @@ describe AIPlayer do
         @ai.evaluate_is_to_is_not_decisions
 
         @ai.possible_values.should == %w(B W GBWYO RBWYO)
+    end
+
+    it "evaluates is_to_is_not_decisions after making a guess" do
+        @ai.next_guess = "BWRG"
+        @i_stream.puts [1, 3].to_s
+        @i_stream.rewind
+        @ai.guess
+
+        @ai.possible_values[0] = "B"
+        @ai.next_guess = "BWRG"
+        @i_stream.puts [1, 3].to_s
+        @i_stream.rewind
+        @ai.guess
+
+        @ai.possible_values.should == %w(B RGBYO GBWYO RBWYO)
     end
 
     after(:each) do

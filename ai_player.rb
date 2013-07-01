@@ -33,18 +33,22 @@ class AIPlayer
         @past_guesses[@next_guess] = [red.to_i, white.to_i]
         
         update_possible_values(@next_guess, response)
+        evaluate_is_to_is_not_decisions
         determine_next_guess
     end
 
     def update_possible_values(guess, result)
-        case result.to_s
-        when /\[0, 0\]/
+        result_str = result.to_s
+        /\[(?<red>\d+), (?<white>\d+)\]/ =~ result_str
+        
+        case
+        when /\[0, 0\]/ =~ result_str
             @possible_values.each { |possibilities| possibilities.delete! guess }
-        when /\[0, [1-4]\]/
+        when /\[0, [1-4]\]/ =~ result_str
             @possible_values.each_with_index do |possibilities, index|
                 possibilities.delete! guess[index]
             end
-        when /\[#{num_figured_out}, 0\]/
+        when /\[#{num_figured_out}, 0\]/ =~ result_str
             values_not_in_answer = ""
             not_figured_out_positions.each do |bad_position|
                 values_not_in_answer += guess[bad_position]
@@ -52,20 +56,27 @@ class AIPlayer
             not_figured_out_positions.each do |bad_position|
                 @possible_values[bad_position].delete! values_not_in_answer
             end
-        when /\[2, 2\]/
-            if num_figured_out == 2
-                pos1, pos2 = not_figured_out_positions
-                @possible_values[pos1] = guess[pos2]
-                @possible_values[pos2] = guess[pos1]
-            elsif num_figured_out == 0
-                paired_array = [0, 1, 2, 3].zip(guess.split(""))
-                paired_array.combination(2) do |conditions|
-                    actions = []
-                    paired_array.each do |possibility|
-                        actions.push possibility unless conditions.include? possibility
-                    end
-                    @is_to_is_not_decisions[conditions] = actions
+        when num_figured_out == 2 && /\[2, 2\]/ =~ result_str
+            pos1, pos2 = not_figured_out_positions
+            @possible_values[pos1] = guess[pos2]
+            @possible_values[pos2] = guess[pos1]
+        when num_figured_out == 0 && /\[2, 2\]/ =~ result_str
+            paired_array = [0, 1, 2, 3].zip(guess.split(""))
+            paired_array.combination(2) do |conditions|
+                actions = []
+                paired_array.each do |possibility|
+                    actions.push possibility unless conditions.include? possibility
                 end
+                @is_to_is_not_decisions[conditions] = actions
+            end
+        when /\[1, 3\]/ =~ result_str
+            paired_array = [0, 1, 2, 3].zip(guess.split(""))
+            paired_array.combination(1) do |condition|
+                actions = []
+                paired_array.each do |possibility|
+                    actions.push possibility unless condition.include? possibility
+                end
+                @is_to_is_not_decisions[condition] = actions
             end
         end
     end

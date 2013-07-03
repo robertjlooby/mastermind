@@ -63,12 +63,38 @@ class AIPlayer
             end
             (0..3).each do |position|
                 @stored_decisions.push lambda {
-                    other_positions = (0..3).to_a
-                    other_positions.delete(position)
+                    other_positions = (0..3).to_a - [position]
                     other_positions.each do |other_position|
                         return false unless @possible_values[other_position] == guess_arr[other_position]
                     end
                     delete_from_positions(guess_arr[position], [position])
+                    false
+                }
+            end
+        when [2, 0]
+            (0..3).to_a.combination(2) do |positions|
+                @stored_decisions.push lambda {
+                    positions.each do |position|
+                        return false if @possible_values[position].include? guess_arr[position]
+                    end
+                    other_positions = (0..3).to_a - positions
+                    other_positions.each do |other_position|
+                        @possible_values[other_position] = guess_arr[other_position]
+                    end
+                    true
+                }
+            end
+            (0..3).to_a.combination(2) do |positions|
+                @stored_decisions.push lambda {
+                    positions.each do |position|
+                        return false unless @possible_values[position] == guess_arr[position]
+                    end
+                    bad_letters = ""
+                    other_positions = (0..3).to_a - positions
+                    other_positions.each do |other_position|
+                        bad_letters += guess_arr[other_position]
+                    end
+                    delete_from_positions(bad_letters, other_positions)
                 }
             end
         when [0, 0]

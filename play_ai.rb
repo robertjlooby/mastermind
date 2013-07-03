@@ -1,14 +1,19 @@
 require_relative 'game_logic'
 require_relative 'ai_player'
-require_relative 'ai_game_io'
+require_relative 'game'
 
 if ARGV[0].nil?
-    code = "WWWW"
+    code = "RGBWYO".split("").repeated_permutation(4).to_a.sample.join
 else
     code = ARGV[0].strip.upcase.match(/[RGBWYO]*/).to_s
     code = "WWWW" unless code.length == 4
 end
 
-ai = AIPlayer.new
-outcome = GameLogic.game(code, 10, AIGameIO::Reader.new(ai), AIGameIO::Writer.new(ai))
-puts "AI #{outcome}!"
+p2l_read, p2l_write = IO.pipe
+l2p_read, l2p_write = IO.pipe
+
+game = Game.new(10, code, AIPlayer, GameLogic, p2l_read, p2l_write, l2p_read, l2p_write)
+outcome = game.play_game
+
+puts "You #{outcome}!"
+puts "Code was #{code}"

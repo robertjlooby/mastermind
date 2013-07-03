@@ -114,6 +114,18 @@ describe AIPlayer do
         @ai.num_figured_out.should == 3
     end
 
+    it "deletes W from all positions when delete_from_positions(W, 0..3)" do
+        expected = Array.new(4){"RGBYO"} 
+        @ai.delete_from_positions("W", 0..3)
+        @ai.possible_values.should == expected
+    end
+
+    it "deletes GRW from positions 1 and 2 when delete_from_positions('GRW', 1..2)" do
+        expected = %w(RGBWYO BYO BYO RGBWYO) 
+        @ai.delete_from_positions("GRW", 1..2)
+        @ai.possible_values.should == expected
+    end
+
     it "eliminates possible values if no pins are returned" do
         expected = Array.new(4){"RGBYO"} 
         @i_stream.puts [0, 0].to_s

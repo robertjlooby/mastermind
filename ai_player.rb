@@ -37,13 +37,19 @@ class AIPlayer
         determine_next_guess
     end
 
+    def delete_from_positions(str, positions)
+        positions.each do |position|
+            @possible_values[position].delete! str
+        end
+    end
+
     def update_possible_values(guess, result)
         result_str = result.to_s
         /\[(?<red>\d+), (?<white>\d+)\]/ =~ result_str
         
         case
-        when /\[0, 0\]/ =~ result_str
-            @possible_values.each { |possibilities| possibilities.delete! guess }
+        when red == 0 && white == 0
+            delete_from_positions(guess, 0..3)
         when /\[0, [1-4]\]/ =~ result_str
             @possible_values.each_with_index do |possibilities, index|
                 possibilities.delete! guess[index]

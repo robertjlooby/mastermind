@@ -44,9 +44,33 @@ class AIPlayer
     end
 
     def update_possible_values(guess, response)
+        guess_arr = guess.split("")
         case response
         when [4, 0]
-            @possible_values = guess.split("")
+            @possible_values = guess_arr
+        when [3, 0]
+            (0..3).each do |position|
+                @stored_decisions.push lambda {
+                    
+                    return false if @possible_values[position].include? guess_arr[position]
+                    other_positions = (0..3).to_a
+                    other_positions.delete(position)
+                    other_positions.each do |other_position|
+                        @possible_values[other_position] = guess_arr[other_position]
+                    end
+                    true
+                }
+            end
+            (0..3).each do |position|
+                @stored_decisions.push lambda {
+                    other_positions = (0..3).to_a
+                    other_positions.delete(position)
+                    other_positions.each do |other_position|
+                        return false unless @possible_values[other_position] == guess_arr[other_position]
+                    end
+                    delete_from_positions(guess_arr[position], [position])
+                }
+            end
         when [0, 0]
             delete_from_positions guess, (0..3)
         end

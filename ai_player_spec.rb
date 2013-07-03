@@ -370,4 +370,94 @@ describe AIPlayer do
         
         @ai.possible_values.should == expected
     end
+
+    it "eliminates possible values if [1, 0] is returned with a guess of WGRB and later possible_values[0, 1, 2] are found not to be W, G, R" do
+        #if pv[0] :does_not_include "W" && pv[1] :does_not_include "G" && pv[2] :does_not_include "R" then pv[3] = "B" end x4
+        @ai.next_guess = "WGRB"
+        expected = %w(BYO BYO BYO B) 
+        @i_stream.puts [1, 0].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.delete_from_positions "W", [0]
+        @ai.delete_from_positions "G", [1]
+        @ai.delete_from_positions "R", [2]
+        @ai.call_stored_decisions
+        
+        @ai.possible_values.should == expected
+    end
+
+    it "eliminates possible values if [1, 0] is returned with a guess of WGRB and later possible_values[0, 2, 3] are found not to be W,  R, B" do
+        #if pv[0] :does_not_include "W" && pv[1] :does_not_include "G" && pv[2] :does_not_include "R" then pv[3] = "B" end x4
+        @ai.next_guess = "WGRB"
+        expected = %w(GYO G GYO GYO) 
+        @i_stream.puts [1, 0].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.delete_from_positions "W", [0]
+        @ai.delete_from_positions "R", [2]
+        @ai.delete_from_positions "B", [3]
+        @ai.call_stored_decisions
+        
+        @ai.possible_values.should == expected
+    end
+
+    it "eliminates possible values if [1, 0] is returned with a guess of WGRB and later possible_values[1, 2, 3] are found not to be G,  R, B" do
+        #if pv[0] :does_not_include "W" && pv[1] :does_not_include "G" && pv[2] :does_not_include "R" then pv[3] = "B" end x4
+        @ai.next_guess = "WGRB"
+        expected = %w(W WYO WYO WYO) 
+        @i_stream.puts [1, 0].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.delete_from_positions "G", [1]
+        @ai.delete_from_positions "R", [2]
+        @ai.delete_from_positions "B", [3]
+        @ai.call_stored_decisions
+        
+        @ai.possible_values.should == expected
+    end
+
+    it "eliminates possible values if [1, 0] is returned with a guess of WGRB and later possible_values[1] is found to be G" do
+        #if pv[0] == "W" then pv[1..3].delete "GRB" end x4
+        @ai.next_guess = "WGRB"
+        expected = %w(GYO G GYO GYO) 
+        @i_stream.puts [1, 0].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values[1] = "G"
+        @ai.call_stored_decisions
+        
+        @ai.possible_values.should == expected
+    end
+
+    it "eliminates possible values if [1, 0] is returned with a guess of WGRB and later possible_values[2] is found to be W" do
+        #if pv[0] == "W" then pv[1..3].delete "GRB" end x4
+        @ai.next_guess = "WGRB"
+        expected = %w(W WYO WYO WYO) 
+        @i_stream.puts [1, 0].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values[0] = "W"
+        @ai.call_stored_decisions
+        
+        @ai.possible_values.should == expected
+    end
+
+    it "eliminates possible values if [1, 0] is returned with a guess of WGRB and later possible_values[3] is found to be B" do
+        #if pv[0] == "W" then pv[1..3].delete "GRB" end x4
+        @ai.next_guess = "WGRB"
+        expected = %w(BYO BYO BYO B) 
+        @i_stream.puts [1, 0].to_s
+        @i_stream.rewind
+
+        @ai.guess
+        @ai.possible_values[3] = "B"
+        @ai.call_stored_decisions
+        
+        @ai.possible_values.should == expected
+    end
 end

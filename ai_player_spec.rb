@@ -36,7 +36,76 @@ describe AIPlayer do
         @o_stream.rewind
         @o_stream.gets.chomp.should == "WWWW"
     end
+
+    it "initially has no stored decisions" do
+        @ai.stored_decisions.should == []
+    end
+
+    it "calls all stored decisions when told to" do
+        l1 = lambda { @ai.instance_variable_set(:@s1, 1) }
+        l2 = lambda { @ai.instance_variable_set(:@s2, 2) }
+        @ai.stored_decisions = [l1, l2]
+
+        @ai.call_stored_decisions
+
+        @ai.instance_variable_get(:@s1).should == 1
+        @ai.instance_variable_get(:@s2).should == 2
+    end
+
+    it "removes stored decisions that return true" do
+        l1 = lambda { true }
+        l2 = lambda { false }
+        l3 = lambda { true }
+        l4 = lambda { false }
+        @ai.stored_decisions = [l1, l2, l3, l4]
+
+        @ai.call_stored_decisions
+        
+        @ai.stored_decisions.should == [l2, l4]
+    end
+
+    it "repeatedly calls all stored decisions until all return false" do
+        l1 = lambda { false }
+        l2 = lambda { if @ai.instance_variables.include?(:@v3) then
+                         true 
+                      else 
+                         false 
+                      end }
+        l3 = lambda { if @ai.instance_variables.include?(:@v2) then
+                         @ai.instance_variable_set(:@v3, 3)
+                         true
+                      else 
+                         false 
+                      end }
+        l4 = lambda { if @ai.instance_variables.include?(:@v1) then
+                         @ai.instance_variable_set(:@v2, 2)
+                         true
+                      else 
+                         false 
+                      end }
+        l5 = lambda { @ai.instance_variable_set(:@v1, 1)
+                      true}
+        @ai.stored_decisions = [l1, l2, l3, l4, l5]
+
+        @ai.call_stored_decisions
+
+        @ai.stored_decisions.should == [l1]
+        @ai.instance_variable_get(:@v1).should == 1
+        @ai.instance_variable_get(:@v2).should == 2
+        @ai.instance_variable_get(:@v3).should == 3
+    end
     
+    it "calls all stored decisions after updating possible values" do
+        l1 = lambda { @ai.instance_variable_set(:@s1, 1) }
+        l2 = lambda { @ai.instance_variable_set(:@s2, 2) }
+        @ai.stored_decisions = [l1, l2]
+
+        @ai.update_possible_values("WWWW", [0, 0])
+
+        @ai.instance_variable_get(:@s1).should == 1
+        @ai.instance_variable_get(:@s2).should == 2
+    end
+
     it "has figured out no positions initially" do
         @ai.figured_out_positions.should == []
     end
@@ -126,189 +195,45 @@ describe AIPlayer do
         @ai.possible_values.should == expected
     end
 
-    it "eliminates possible values if no pins are returned" do
+    it "eliminates possible values if no pins are returned with guess of WWWW" do
         expected = Array.new(4){"RGBYO"} 
         @i_stream.puts [0, 0].to_s
         @i_stream.rewind
 
         @ai.guess
         
-        @o_stream.rewind
-        @o_stream.gets.chomp.should == "WWWW"
         @ai.possible_values.should == expected
     end
 
-    it "eliminates possible values if no red pins are returned" do
-        expected = %w(RGBYO RGBYO GBWYO GBWYO)
-        @ai.next_guess = "WWRR"
-        @i_stream.puts [0, 2].to_s
+    it "eliminates possible values if no pins are returned with guess of GBYY" do
+        @ai.next_guess = "GBYY"
+        expected = Array.new(4){"RWO"} 
+        @i_stream.puts [0, 0].to_s
         @i_stream.rewind
 
         @ai.guess
         
-        @o_stream.rewind
-        @o_stream.gets.chomp.should == "WWRR"
         @ai.possible_values.should == expected
     end
 
-    it "eliminates possible values if 1 red pin returned and 1 figured out value, and no white pins" do
-        @ai.possible_values = %w(W RGB RGB RGB)
-        @ai.next_guess = "WRGG"
-        expected = %w(W B B B)
-        @i_stream.puts [1, 0].to_s
+    it "has the solution if [4, 0] is returned with a guess of WWWW" do
+        expected = %w(W W W W) 
+        @i_stream.puts [4, 0].to_s
         @i_stream.rewind
 
         @ai.guess
         
-        @o_stream.rewind
-        @o_stream.gets.chomp.should == "WRGG"
         @ai.possible_values.should == expected
-        @ai.next_guess.should == "WBBB"
     end
 
-    it "eliminates possible values if 2 red pins returned and 2 figured out value, and no white pins" do
-        @ai.possible_values = %w(W RGB R RGB)
-        @ai.next_guess = "WRRG"
-        expected = %w(W B R B)
-        @i_stream.puts [2, 0].to_s
+    it "has the solution if [4, 0] is returned with a guess of GBYY" do
+        @ai.next_guess = "GBYY"
+        expected = %w(G B Y Y) 
+        @i_stream.puts [4, 0].to_s
         @i_stream.rewind
 
         @ai.guess
-        @o_stream.rewind
-        @o_stream.gets.chomp.should == "WRRG"
+        
         @ai.possible_values.should == expected
-        @ai.next_guess.should == "WBRB"
-    end
-
-    it "eliminates possible values if 2 red pins, 2 figured out values, and 2 white pins" do
-        @ai.possible_values = %w(W RGB R RGB)
-        @ai.next_guess = "WRRG"
-        expected = %w(W G R R)
-        @i_stream.puts [2, 2].to_s
-        @i_stream.rewind
-
-        @ai.guess
-        @ai.possible_values.should == expected
-        @ai.next_guess.should == "WGRR"
-    end
-
-    it "eliminates possible values if 2 red pins, 2 figured out values, and 2 white pins" do
-        @ai.possible_values = %w(WRG B R RGB)
-        @ai.next_guess = "RBRG"
-        expected = %w(G B R R)
-        @i_stream.puts [2, 2].to_s
-        @i_stream.rewind
-
-        @ai.guess
-        @ai.possible_values.should == expected
-        @ai.next_guess.should == "GBRR"
-    end
-
-    it "eliminates possible values if 3 red pins, 3 figured out values, and 0 white pins" do
-        @ai.possible_values = %w(W B R GB)
-        @ai.next_guess = "WBRG"
-        expected = %w(W B R B)
-        @i_stream.puts [3, 0].to_s
-        @i_stream.rewind
-
-        @ai.guess
-        @ai.possible_values.should == expected
-        @ai.next_guess.should == "WBRB"
-    end
-
-    it "eliminates possible values if 3 red pins, 3 figured out values, and 0 white pins" do
-        @ai.possible_values = %w(W B R GB)
-        @ai.next_guess = "WBRG"
-        expected = %w(W B R B)
-        @i_stream.puts [3, 0].to_s
-        @i_stream.rewind
-
-        @ai.guess
-        @ai.possible_values.should == expected
-        @ai.next_guess.should == "WBRB"
-    end
-
-    it "stores is_to_is_not_decisions when 2 red pins, 2 white pins, no figured out values" do
-        @ai.next_guess = "WBRG"
-        @i_stream.puts [2, 2].to_s
-        @i_stream.rewind
-        expected_decisions = Hash.new
-        expected_decisions[ [[0, "W"], [1, "B"]] ] = [[2, "R"], [3, "G"]]
-        expected_decisions[ [[0, "W"], [2, "R"]] ] = [[1, "B"], [3, "G"]]
-        expected_decisions[ [[0, "W"], [3, "G"]] ] = [[1, "B"], [2, "R"]]
-        expected_decisions[ [[1, "B"], [2, "R"]] ] = [[0, "W"], [3, "G"]]
-        expected_decisions[ [[1, "B"], [3, "G"]] ] = [[0, "W"], [2, "R"]]
-        expected_decisions[ [[2, "R"], [3, "G"]] ] = [[0, "W"], [1, "B"]]
-
-        @ai.guess
-        expected_decisions.each do |conditions, actions|
-            @ai.is_to_is_not_decisions[conditions].should == actions
-        end
-    end
-
-    it "stores is_to_is_not_decisions when 1 red pin, 3 white pins, no figured out values" do
-        @ai.next_guess = "WBRG"
-        @i_stream.puts [1, 3].to_s
-        @i_stream.rewind
-        expected_decisions = Hash.new
-        expected_decisions[ [[0, "W"]] ] = [[1, "B"], [2, "R"], [3, "G"]]
-        expected_decisions[ [[1, "B"]] ] = [[0, "W"], [2, "R"], [3, "G"]]
-        expected_decisions[ [[2, "R"]] ] = [[0, "W"], [1, "B"], [3, "G"]]
-        expected_decisions[ [[3, "G"]] ] = [[0, "W"], [1, "B"], [2, "R"]]
-
-        @ai.guess
-        expected_decisions.each do |conditions, actions|
-            @ai.is_to_is_not_decisions[conditions].should == actions
-        end
-    end
-
-    it "can evaluate is_to_is_not_decisions" do
-        @ai.next_guess = "WBRG"
-        @i_stream.puts [2, 2].to_s
-        @i_stream.rewind
-
-        @ai.guess
-        @ai.possible_values[0] = "W"
-        @ai.possible_values[1] = "B"
-        @ai.evaluate_is_to_is_not_decisions
-
-        @ai.possible_values.should == %w(W B GBWYO RBWYO)
-    end
-
-    it "can evaluate is_to_is_not_decisions" do
-        @ai.next_guess = "BWRG"
-        @i_stream.puts [2, 2].to_s
-        @i_stream.rewind
-
-        @ai.guess
-        @ai.possible_values[0] = "B"
-        @ai.possible_values[1] = "W"
-        @ai.evaluate_is_to_is_not_decisions
-
-        @ai.possible_values.should == %w(B W GBWYO RBWYO)
-    end
-
-    it "evaluates is_to_is_not_decisions after making a guess" do
-        @ai.next_guess = "BWRG"
-        @i_stream.puts [1, 3].to_s
-        @i_stream.rewind
-        @ai.guess
-
-        @ai.possible_values[0] = "B"
-        @ai.next_guess = "BWRG"
-        @i_stream.puts [1, 3].to_s
-        @i_stream.rewind
-        @ai.guess
-
-        @ai.possible_values.should == %w(B RGBYO GBWYO RBWYO)
-    end
-
-    after(:each) do
-        # doesn't repeat guesses
-#       @ai.past_guesses.keys.include?(@ai.next_guess).should == false
-        # only guesses values that are in the list of possible values
-#       @ai.next_guess.split("").each_with_index do |guess_char, index|
-#           @ai.possible_values[index].include?(guess_char).should == true
-#       end
     end
 end

@@ -45,38 +45,12 @@ class AIPlayer
 
     def update_possible_values(guess, response)
         guess_arr = guess.split("")
-        case response
-        when [4, 0]
-            @possible_values = guess_arr
-        when [3, 0]
-            (0..3).each do |position|
+        red, white = response
+        case
+        when white == 0
+            (0..3).to_a.combination(4 - red) do |positions|
                 @stored_decisions.push lambda {
-                    
-                    return false if @possible_values[position].include? guess_arr[position]
-                    other_positions = (0..3).to_a
-                    other_positions.delete(position)
-                    other_positions.each do |other_position|
-                        @possible_values[other_position] = guess_arr[other_position]
-                    end
-                    true
-                }
-            end
-            (0..3).each do |position|
-                @stored_decisions.push lambda {
-                    other_positions = (0..3).to_a - [position]
-                    other_positions.each do |other_position|
-                        return false unless @possible_values[other_position] == guess_arr[other_position]
-                    end
-                    delete_from_positions(guess_arr[position], [position])
-                    false
-                }
-            end
-        when [2, 0]
-            (0..3).to_a.combination(2) do |positions|
-                @stored_decisions.push lambda {
-                    positions.each do |position|
-                        return false if @possible_values[position].include? guess_arr[position]
-                    end
+                    positions.each { |position| return false if @possible_values[position].include? guess_arr[position] }
                     other_positions = (0..3).to_a - positions
                     other_positions.each do |other_position|
                         @possible_values[other_position] = guess_arr[other_position]
@@ -84,21 +58,18 @@ class AIPlayer
                     true
                 }
             end
-            (0..3).to_a.combination(2) do |positions|
+            (0..3).to_a.combination(red) do |positions|
                 @stored_decisions.push lambda {
-                    positions.each do |position|
-                        return false unless @possible_values[position] == guess_arr[position]
-                    end
+                    positions.each { |position| return false unless @possible_values[position] == guess_arr[position] }
                     bad_letters = ""
                     other_positions = (0..3).to_a - positions
                     other_positions.each do |other_position|
                         bad_letters += guess_arr[other_position]
                     end
                     delete_from_positions(bad_letters, other_positions)
+                    true
                 }
             end
-        when [0, 0]
-            delete_from_positions guess, (0..3)
         end
         call_stored_decisions
     end

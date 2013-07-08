@@ -1,92 +1,34 @@
 class AIPlayer
-    attr_reader :past_guesses
-    attr_accessor :next_guess, :possible_values, :stored_decisions
-    def initialize(i_stream, o_stream)
-        @past_guesses = {}
-        @stored_decisions = []
+    attr_accessor :next_guess, :possible_values
+    def initialize(logic_class)
         @next_guess = "WWWW"
-        @possible_values = Array.new(4){"RGBWYO"}
-        @i_stream = i_stream
-        @o_stream = o_stream
-    end
-
-    def figured_out_positions
-        figured_out_positions = []
-        (0..3).each do |i|
-            figured_out_positions.push i if @possible_values[i].length == 1
+        @possible_values = []
+        %w(R G B W Y O).repeated_permutation(4) do |perm|
+            @possible_values << perm.join
         end
-        figured_out_positions
+        @game_logic = logic_class.new
     end
 
-    def not_figured_out_positions
-        [0, 1, 2, 3] - figured_out_positions
+    def get_guess
+        next_guess
     end
 
-    def num_figured_out
-        figured_out_positions.length
-    end
-
-    def guess
-        @o_stream.puts next_guess
-        response = @i_stream.gets.chomp.upcase
+    def return_response(response)
+        response = response.upcase
         /\[(?<red>\d+), (?<white>\d+)\]/ =~ response
         response_arr = [red.to_i, white.to_i]
-        @past_guesses[@next_guess] = response_arr
         
         update_possible_values(@next_guess, response_arr)
         determine_next_guess
     end
 
-    def delete_from_positions(str, positions)
-        positions.each do |position|
-            @possible_values[position].delete! str
-        end
-    end
-
     def update_possible_values(guess, response)
-        guess_arr = guess.split("")
-        red, white = response
-        case
-        when white == 0
-            (0..3).to_a.combination(4 - red) do |positions|
-                @stored_decisions.push lambda {
-                    positions.each { |position| return false if @possible_values[position].include? guess_arr[position] }
-                    other_positions = (0..3).to_a - positions
-                    other_positions.each do |other_position|
-                        @possible_values[other_position] = guess_arr[other_position]
-                    end
-                    true
-                }
-            end
-            (0..3).to_a.combination(red) do |positions|
-                @stored_decisions.push lambda {
-                    positions.each { |position| return false unless @possible_values[position] == guess_arr[position] }
-                    bad_letters = ""
-                    other_positions = (0..3).to_a - positions
-                    other_positions.each do |other_position|
-                        bad_letters += guess_arr[other_position]
-                    end
-                    delete_from_positions(bad_letters, other_positions)
-                    true
-                }
-            end
+        @possible_values.delete_if do |possible_value| 
+            @game_logic.respond(guess, possible_value) != response
         end
-        call_stored_decisions
-    end
-
-    def call_stored_decisions
-        stored_decisions_changed = false
-        stored_decisions.delete_if do |stored_decision|
-            stored_decisions_changed = true if stored_decision.call
-        end
-        call_stored_decisions if stored_decisions_changed
     end
 
     def determine_next_guess
-        next_guess = ""
-        @possible_values.each do |possible_value_string|
-            next_guess += possible_value_string.split("").sample
-        end
-        @next_guess = next_guess
+        @next_guess = @possible_values.first
     end
 end

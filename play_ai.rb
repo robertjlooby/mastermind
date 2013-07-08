@@ -1,4 +1,6 @@
 require_relative 'game_logic'
+require_relative 'game_logic_io'
+require_relative 'player_io'
 require_relative 'ai_player'
 require_relative 'game'
 
@@ -12,8 +14,12 @@ end
 p2l_read, p2l_write = IO.pipe
 l2p_read, l2p_write = IO.pipe
 
-game = Game.new(10, code, AIPlayer, GameLogic, p2l_read, p2l_write, l2p_read, l2p_write)
+game = Game.new(10, code, 
+                PlayerIO, AIPlayer, 
+                GameLogicIO, GameLogic, 
+                p2l_read, p2l_write, 
+                l2p_read, l2p_write)
 outcome = game.play_game
 
-puts "You #{outcome}!"
+puts "AI #{outcome[0]} in #{outcome[1]} turns!"
 puts "Code was #{code}"

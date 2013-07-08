@@ -1,18 +1,11 @@
 class GameLogic
-    attr_accessor :code
-    def initialize(code, i_stream, o_stream)
-        @code = code
-        @i_stream = i_stream
-        @o_stream = o_stream
-    end
-
-    def respond
+    def respond(guess, code)
         red = white = 0
-        guess = @i_stream.gets.chomp.split("")
-        actual = @code.split("")
+        guess = guess.split("")
+        actual = code.split("")
 
-        (0 ... guess.length).each do |index|
-            if guess[index] == actual[index]
+        guess.each_with_index do |guess_color, index|
+            if guess_color == actual[index]
                 red += 1 
                 guess[index] = actual[index] = nil
             end
@@ -27,7 +20,6 @@ class GameLogic
             end
         end
 
-        @o_stream.puts [red, white].to_s
         [red, white]
     end
 end

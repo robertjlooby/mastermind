@@ -9,8 +9,8 @@ describe AIPlayer do
     it "exists" do
     end
     
-    it "has a default next guess of WWWW" do
-        @ai.next_guess.should == "WWWW"
+    it "has a default next guess of WYOO" do
+        @ai.next_guess.should == "WYOO"
     end
 
     it "has a default possible array of all values" do
@@ -22,6 +22,7 @@ describe AIPlayer do
     end
 
     it "will eliminate all possible values with W when WWWW is guessed and [0, 0] is returned" do
+        @ai.next_guess = "WWWW"
         expected = []
         %w(R G B Y O).repeated_permutation(4) do |perm|
             expected << perm.join
@@ -77,6 +78,7 @@ describe AIPlayer do
     end
 
     it "will pick a next guess from the remaining values if WWWW is guessed and [0, 0] is returned" do
+        @ai.next_guess = "WWWW"
         expected = []
         %w(R G B Y O).repeated_permutation(4) do |perm|
             expected << perm.join

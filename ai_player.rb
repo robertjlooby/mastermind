@@ -1,7 +1,7 @@
 class AIPlayer
     attr_accessor :next_guess, :possible_values
     def initialize(logic_class)
-        @next_guess = "WWWW"
+        @next_guess = "WYOO"
         @possible_values = []
         %w(R G B W Y O).repeated_permutation(4) do |perm|
             @possible_values << perm.join
